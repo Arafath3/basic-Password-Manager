@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import *
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -31,20 +32,48 @@ def add():
     website = website_input.get()
     email = email_input.get()
     password = password_input.get()
+    new_data = {website: {
+        "email": email,
+        "password": password,
+    }}
     if len(website) == 0 or len(password) == 0:
         messagebox.showerror(title='Oops!!', message="please don't leave any fields empty!")
 
     else:
-
-        is_ok = messagebox.askokcancel(title=f'{website}', message=f'These are the details entered: \nEmail: {email}'
-                                                                   f'\nPassword: {password} \n Is it ok '
-                                                                   f'to save?')
-
-        if is_ok:
-            with open('data.txt', 'w') as f:
-                f.write(f"{website} | {email} | {password} \n")
+        try:
+            with open('data.json', 'r') as data_file:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open('data.json', 'w') as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+            data.update(new_data)
+            with open('data.json', 'w') as f:
+                json.dump(new_data, f, indent=4)
+        finally:
             website_input.delete(0, END)
             password_input.delete(0, END)
+
+
+def search():
+    website = website_input.get()
+    try:
+        with open('data.json', 'r') as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showerror(title='Error', message='No Data file found')
+    else:
+        if website in data:
+            website_name = data[website]
+            email = website_name['email']
+            password = website_name['password']
+            messagebox.showinfo(title=f"{website}", message=f"Email: {email}\nPassword: {password} \n")
+            email_input.delete(0, END)
+            email_input.insert(0, email)
+            password_input.delete(0, END)
+            password_input.insert(0, password)
+        else:
+            messagebox.showerror(title='Error', message=f'No Details for {website} exists.')
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -70,7 +99,7 @@ password_text.grid(column=0, row=3)
 
 # Entries(Inputs)
 
-website_input = Entry(width=35)
+website_input = Entry(width=21)
 website_input.grid(column=1, row=1, columnspan=2)
 website_input.focus()
 
@@ -88,5 +117,8 @@ generate_btn.grid(column=2, row=3)
 
 add_btn = Button(text='Add', width=36, command=add)
 add_btn.grid(column=1, row=4, columnspan=2)
+
+search_btn = Button(text='Search', command=search, width=13)
+search_btn.grid(column=2, row=1)
 
 window.mainloop()
